@@ -1,1 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gửi tin nhắn tới Telegram</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        textarea { width: 80%; height: 150px; margin-bottom: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
 
+    <h2>Nhập nội dung của bạn</h2>
+    <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
+    <button onclick="sendMessage()">Gửi tin nhắn</button>
+
+    <script>
+        function sendMessage() {
+            let message = document.getElementById("message").value;
+            if (message.trim() === "") {
+                alert("Vui lòng nhập nội dung!");
+                return;
+            }
+
+            let botToken = "7993794444:AAHecrf9mfQ1Syfa3bl_40e4JlEaxCt9CpA";
+            let chatId = "6956722046";
+            let url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+            let data = {
+                chat_id: chatId,
+                text: `📩 Nội dung mới từ website:\n\n${message}`
+            };
+
+            fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    alert("Tin nhắn đã được gửi!");
+                    document.getElementById("message").value = "";
+                } else {
+                    alert("Lỗi khi gửi tin nhắn!");
+                }
+            })
+            .catch(error => alert("Lỗi kết nối!"));
+        }
+    </script>
+
+</body>
+</html>
