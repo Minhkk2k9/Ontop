@@ -6,31 +6,37 @@
     <title>Gửi tin nhắn tới Telegram</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-        textarea { width: 80%; height: 150px; margin-bottom: 10px; }
+        input, textarea { width: 80%; padding: 10px; margin-bottom: 10px; }
         button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        #status { margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <h2>Nhập nội dung của bạn</h2>
+    <input type="text" id="chatId" placeholder="Nhập ID chat Telegram..."><br>
     <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
     <button onclick="sendMessage()">Gửi tin nhắn</button>
+    <p id="status"></p> <!-- Dòng hiển thị trạng thái -->
 
     <script>
         function sendMessage() {
-            let message = document.getElementById("message").value;
-            if (message.trim() === "") {
-                alert("Vui lòng nhập nội dung!");
+            let chatId = document.getElementById("chatId").value.trim();
+            let message = document.getElementById("message").value.trim();
+            let statusElement = document.getElementById("status");
+
+            if (chatId === "" || message === "") {
+                statusElement.style.color = "red";
+                statusElement.innerText = "❌ Vui lòng nhập ID chat và nội dung!";
                 return;
             }
 
-            let botToken = "7993794444:AAHecrf9mfQ1Syfa3bl_40e4JlEaxCt9CpA";
-            let chatId = "6956722046";
+            let botToken = "7550142487:AAGKx3gjePiHbnYYA7_Rrg-ssJFokHRcMWg"; // Thay bằng token bot thật
             let url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
             let data = {
                 chat_id: chatId,
-                text: `📩 Nội dung mới từ website:\n\n${message}`
+                text: message // Gửi đúng nội dung tin nhắn, không thêm chữ gì khác
             };
 
             fetch(url, {
@@ -41,13 +47,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.ok) {
-                    alert("Tin nhắn đã được gửi!");
-                    document.getElementById("message").value = "";
+                    statusElement.style.color = "green";
+                    statusElement.innerText = "✅ Tin nhắn đã được gửi!";
+                    document.getElementById("message").value = ""; // Xóa nội dung nhập
                 } else {
-                    alert("Lỗi khi gửi tin nhắn!");
+                    statusElement.style.color = "red";
+                    statusElement.innerText = "❌ Lỗi khi gửi tin nhắn!";
                 }
             })
-            .catch(error => alert("Lỗi kết nối!"));
+            .catch(error => {
+                statusElement.style.color = "red";
+                statusElement.innerText = "❌ Lỗi kết nối!";
+            });
         }
     </script>
 
