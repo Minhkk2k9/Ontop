@@ -13,7 +13,8 @@
 </head>
 <body>
 
-    <h2>Nhập nội dung của bạn</h2>
+    <h2>Nhập thông tin</h2>
+    <input type="text" id="botToken" placeholder="Nhập Token Bot Telegram..."><br>
     <input type="text" id="chatId" placeholder="Nhập ID chat Telegram..."><br>
     <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
     <button onclick="sendMessage()">Gửi tin nhắn</button>
@@ -21,17 +22,17 @@
 
     <script>
         function sendMessage() {
+            let botToken = document.getElementById("botToken").value.trim();
             let chatId = document.getElementById("chatId").value.trim();
             let message = document.getElementById("message").value.trim();
             let statusElement = document.getElementById("status");
 
-            if (chatId === "" || message === "") {
+            if (botToken === "" || chatId === "" || message === "") {
                 statusElement.style.color = "red";
-                statusElement.innerText = "❌ Vui lòng nhập ID chat và nội dung!";
+                statusElement.innerText = "❌ Vui lòng nhập Token, ID chat và nội dung!";
                 return;
             }
 
-            let botToken = "7550142487:AAGKx3gjePiHbnYYA7_Rrg-ssJFokHRcMWg"; // Thay bằng token bot thật
             let url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
             let data = {
