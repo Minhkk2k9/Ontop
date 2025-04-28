@@ -17,6 +17,7 @@
     <input type="text" id="botToken" placeholder="Nhập Token Bot Telegram..."><br>
     <input type="text" id="chatId" placeholder="Nhập ID chat Telegram..."><br>
     <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
+    <input type="text" id="replyLink" placeholder="Nhập link tin nhắn cần trả lời (có thể bỏ trống)"><br>
     <button onclick="sendMessage()">Gửi tin nhắn</button>
     <p id="status"></p> <!-- Dòng hiển thị trạng thái -->
 
@@ -25,20 +26,42 @@
             let botToken = document.getElementById("botToken").value.trim();
             let chatId = document.getElementById("chatId").value.trim();
             let message = document.getElementById("message").value.trim();
+            let replyLink = document.getElementById("replyLink").value.trim();
             let statusElement = document.getElementById("status");
 
-            if (botToken === "" || chatId === "" || message === "") {
+            if (botToken === "" || (chatId === "" && replyLink === "") || message === "") {
                 statusElement.style.color = "red";
-                statusElement.innerText = "❌ Vui lòng nhập Token, ID chat và nội dung!";
+                statusElement.innerText = "❌ Vui lòng nhập Token, ID chat hoặc Link trả lời và nội dung!";
                 return;
+            }
+
+            // Xử lý nếu có nhập link
+            let replyToMessageId = null;
+            if (replyLink !== "") {
+                try {
+                    let parts = replyLink.split('/');
+                    let usernameOrId = parts[3];
+                    let messageId = parts[4];
+                    if (!usernameOrId || !messageId) throw "Link không hợp lệ!";
+                    chatId = '@' + usernameOrId; // dùng @username
+                    replyToMessageId = messageId;
+                } catch (e) {
+                    statusElement.style.color = "red";
+                    statusElement.innerText = "❌ Link trả lời không hợp lệ!";
+                    return;
+                }
             }
 
             let url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
             let data = {
                 chat_id: chatId,
-                text: message // Gửi đúng nội dung tin nhắn, không thêm chữ gì khác
+                text: message
             };
+
+            if (replyToMessageId) {
+                data.reply_to_message_id = replyToMessageId;
+            }
 
             fetch(url, {
                 method: "POST",
@@ -50,7 +73,8 @@
                 if (data.ok) {
                     statusElement.style.color = "green";
                     statusElement.innerText = "✅ Tin nhắn đã được gửi!";
-                    document.getElementById("message").value = ""; // Xóa nội dung nhập
+                    document.getElementById("message").value = "";
+                    document.getElementById("replyLink").value = "";
                 } else {
                     statusElement.style.color = "red";
                     statusElement.innerText = "❌ Lỗi khi gửi tin nhắn!";
