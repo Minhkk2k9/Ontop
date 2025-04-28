@@ -14,7 +14,7 @@
 <body>
 
     <h2>Nhập thông tin</h2>
-    <input type="text" id="botToken" placeholder="Nhập Token Bot Telegram..."><br>
+    <!-- Bỏ ô nhập botToken -->
     <input type="text" id="chatId" placeholder="Nhập ID chat Telegram..."><br>
     <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
     <input type="text" id="replyLink" placeholder="Nhập link tin nhắn cần trả lời (có thể bỏ trống)"><br>
@@ -23,15 +23,15 @@
 
     <script>
         function sendMessage() {
-            let botToken = document.getElementById("botToken").value.trim();
+            let botToken = "7550142487:AAH_xOHuyHr0C2nXnQmkWx-b6-f1NSDXaHo"; // Token mặc định cố định
             let chatId = document.getElementById("chatId").value.trim();
             let message = document.getElementById("message").value.trim();
             let replyLink = document.getElementById("replyLink").value.trim();
             let statusElement = document.getElementById("status");
 
-            if (botToken === "" || (chatId === "" && replyLink === "") || message === "") {
+            if ((chatId === "" && replyLink === "") || message === "") {
                 statusElement.style.color = "red";
-                statusElement.innerText = "❌ Vui lòng nhập Token, ID chat hoặc Link trả lời và nội dung!";
+                statusElement.innerText = "❌ Vui lòng nhập ID chat hoặc Link trả lời và nội dung!";
                 return;
             }
 
