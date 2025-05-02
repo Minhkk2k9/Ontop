@@ -14,28 +14,28 @@
 <body>
 
     <h2>Nhập thông tin</h2>
-    <!-- Bỏ ô nhập botToken -->
     <input type="text" id="chatId" placeholder="Nhập ID chat Telegram..."><br>
     <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
     <input type="text" id="replyLink" placeholder="Nhập link tin nhắn cần trả lời (có thể bỏ trống)"><br>
+    <input type="file" id="photoInput" accept="image/*"><br>
     <button onclick="sendMessage()">Gửi tin nhắn</button>
-    <p id="status"></p> <!-- Dòng hiển thị trạng thái -->
+    <p id="status"></p>
 
     <script>
         function sendMessage() {
-            let botToken = "7550142487:AAH_xOHuyHr0C2nXnQmkWx-b6-f1NSDXaHo"; // Token mặc định cố định
+            let botToken = "7550142487:AAH_xOHuyHr0C2nXnQmkWx-b6-f1NSDXaHo";
             let chatId = document.getElementById("chatId").value.trim();
             let message = document.getElementById("message").value.trim();
             let replyLink = document.getElementById("replyLink").value.trim();
+            let photoFile = document.getElementById("photoInput").files[0];
             let statusElement = document.getElementById("status");
 
-            if ((chatId === "" && replyLink === "") || message === "") {
+            if ((chatId === "" && replyLink === "") || (message === "" && !photoFile)) {
                 statusElement.style.color = "red";
-                statusElement.innerText = "❌ Vui lòng nhập ID chat hoặc Link trả lời và nội dung!";
+                statusElement.innerText = "❌ Vui lòng nhập ID chat hoặc Link trả lời và nội dung hoặc ảnh!";
                 return;
             }
 
-            // Xử lý nếu có nhập link
             let replyToMessageId = null;
             if (replyLink !== "") {
                 try {
@@ -43,7 +43,7 @@
                     let usernameOrId = parts[3];
                     let messageId = parts[4];
                     if (!usernameOrId || !messageId) throw "Link không hợp lệ!";
-                    chatId = '@' + usernameOrId; // dùng @username
+                    chatId = '@' + usernameOrId;
                     replyToMessageId = messageId;
                 } catch (e) {
                     statusElement.style.color = "red";
@@ -52,38 +52,67 @@
                 }
             }
 
-            let url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            if (photoFile) {
+                let url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+                let formData = new FormData();
+                formData.append("chat_id", chatId);
+                formData.append("photo", photoFile);
+                if (message) formData.append("caption", message);
+                if (replyToMessageId) formData.append("reply_to_message_id", replyToMessageId);
 
-            let data = {
-                chat_id: chatId,
-                text: message
-            };
-
-            if (replyToMessageId) {
-                data.reply_to_message_id = replyToMessageId;
-            }
-
-            fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.ok) {
-                    statusElement.style.color = "green";
-                    statusElement.innerText = "✅ Tin nhắn đã được gửi!";
-                    document.getElementById("message").value = "";
-                    document.getElementById("replyLink").value = "";
-                } else {
+                fetch(url, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        statusElement.style.color = "green";
+                        statusElement.innerText = "✅ Ảnh đã được gửi!";
+                        document.getElementById("message").value = "";
+                        document.getElementById("replyLink").value = "";
+                        document.getElementById("photoInput").value = "";
+                    } else {
+                        statusElement.style.color = "red";
+                        statusElement.innerText = "❌ Lỗi khi gửi ảnh!";
+                    }
+                })
+                .catch(error => {
                     statusElement.style.color = "red";
-                    statusElement.innerText = "❌ Lỗi khi gửi tin nhắn!";
+                    statusElement.innerText = "❌ Lỗi kết nối!";
+                });
+            } else {
+                let url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+                let data = {
+                    chat_id: chatId,
+                    text: message
+                };
+                if (replyToMessageId) {
+                    data.reply_to_message_id = replyToMessageId;
                 }
-            })
-            .catch(error => {
-                statusElement.style.color = "red";
-                statusElement.innerText = "❌ Lỗi kết nối!";
-            });
+
+                fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        statusElement.style.color = "green";
+                        statusElement.innerText = "✅ Tin nhắn đã được gửi!";
+                        document.getElementById("message").value = "";
+                        document.getElementById("replyLink").value = "";
+                    } else {
+                        statusElement.style.color = "red";
+                        statusElement.innerText = "❌ Lỗi khi gửi tin nhắn!";
+                    }
+                })
+                .catch(error => {
+                    statusElement.style.color = "red";
+                    statusElement.innerText = "❌ Lỗi kết nối!";
+                });
+            }
         }
     </script>
 
