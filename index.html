@@ -18,21 +18,23 @@
     <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
     <input type="text" id="replyLink" placeholder="Nhập link tin nhắn cần trả lời (có thể bỏ trống)"><br>
     <input type="file" id="photoInput" accept="image/*"><br>
+    <input type="text" id="mediaUrl" placeholder="Nhập link ảnh hoặc video (tùy chọn)"><br>
     <button onclick="sendMessage()">Gửi tin nhắn</button>
     <p id="status"></p>
 
     <script>
         function sendMessage() {
-            let botToken = "7550142487:AAH_xOHuyHr0C2nXnQmkWx-b6-f1NSDXaHo";
+            let botToken = "YOUR_BOT_TOKEN_HERE";
             let chatId = document.getElementById("chatId").value.trim();
             let message = document.getElementById("message").value.trim();
             let replyLink = document.getElementById("replyLink").value.trim();
             let photoFile = document.getElementById("photoInput").files[0];
+            let mediaUrl = document.getElementById("mediaUrl").value.trim();
             let statusElement = document.getElementById("status");
 
-            if ((chatId === "" && replyLink === "") || (message === "" && !photoFile)) {
+            if ((chatId === "" && replyLink === "") || (message === "" && !photoFile && mediaUrl === "")) {
                 statusElement.style.color = "red";
-                statusElement.innerText = "❌ Vui lòng nhập ID chat hoặc Link trả lời và nội dung hoặc ảnh!";
+                statusElement.innerText = "❌ Vui lòng nhập ID chat hoặc Link trả lời và nội dung hoặc ảnh/link!";
                 return;
             }
 
@@ -52,6 +54,7 @@
                 }
             }
 
+            // Ưu tiên gửi file ảnh từ máy
             if (photoFile) {
                 let url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
                 let formData = new FormData();
@@ -72,6 +75,7 @@
                         document.getElementById("message").value = "";
                         document.getElementById("replyLink").value = "";
                         document.getElementById("photoInput").value = "";
+                        document.getElementById("mediaUrl").value = "";
                     } else {
                         statusElement.style.color = "red";
                         statusElement.innerText = "❌ Lỗi khi gửi ảnh!";
@@ -81,7 +85,55 @@
                     statusElement.style.color = "red";
                     statusElement.innerText = "❌ Lỗi kết nối!";
                 });
+            } else if (mediaUrl !== "") {
+                // Gửi ảnh hoặc video từ URL
+                let isImage = mediaUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i);
+                let isVideo = mediaUrl.match(/\.(mp4|mov|mkv|avi|webm)$/i);
+
+                let url = "";
+                let payload = {
+                    chat_id: chatId,
+                    caption: message || undefined,
+                    reply_to_message_id: replyToMessageId || undefined
+                };
+
+                if (isImage) {
+                    url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+                    payload.photo = mediaUrl;
+                } else if (isVideo) {
+                    url = `https://api.telegram.org/bot${botToken}/sendVideo`;
+                    payload.video = mediaUrl;
+                } else {
+                    statusElement.style.color = "red";
+                    statusElement.innerText = "❌ Link media không hợp lệ (không phải ảnh/video)!";
+                    return;
+                }
+
+                fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        statusElement.style.color = "green";
+                        statusElement.innerText = "✅ Media đã được gửi từ link!";
+                        document.getElementById("message").value = "";
+                        document.getElementById("replyLink").value = "";
+                        document.getElementById("mediaUrl").value = "";
+                    } else {
+                        statusElement.style.color = "red";
+                        statusElement.innerText = "❌ Lỗi khi gửi media từ link!";
+                    }
+                })
+                .catch(error => {
+                    statusElement.style.color = "red";
+                    statusElement.innerText = "❌ Lỗi kết nối!";
+                });
+
             } else {
+                // Gửi tin nhắn văn bản
                 let url = `https://api.telegram.org/bot${botToken}/sendMessage`;
                 let data = {
                     chat_id: chatId,
@@ -103,6 +155,7 @@
                         statusElement.innerText = "✅ Tin nhắn đã được gửi!";
                         document.getElementById("message").value = "";
                         document.getElementById("replyLink").value = "";
+                        document.getElementById("mediaUrl").value = "";
                     } else {
                         statusElement.style.color = "red";
                         statusElement.innerText = "❌ Lỗi khi gửi tin nhắn!";
