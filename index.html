@@ -1,173 +1,243 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gửi tin nhắn tới Telegram</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
-        input, textarea { width: 80%; padding: 10px; margin-bottom: 10px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        #status { margin-top: 10px; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gửi tin nhắn tới Telegram</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 50px;
+    }
+    input, textarea {
+      width: 80%;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    #dropZone {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      margin: 10px auto;
+      width: 80%;
+      background: #fafafa;
+      color: #999;
+    }
+    #dropZone.dragover {
+      background-color: #e6f7ff;
+      border-color: #1e90ff;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
 
-    <h2>Nhập thông tin</h2>
-    <input type="text" id="chatId" placeholder="Nhập ID chat Telegram..."><br>
-    <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
-    <input type="text" id="replyLink" placeholder="Nhập link tin nhắn cần trả lời (có thể bỏ trống)"><br>
-    <input type="file" id="photoInput" accept="image/*"><br>
-    <input type="text" id="mediaUrl" placeholder="Nhập link ảnh hoặc video (tùy chọn)"><br>
-    <button onclick="sendMessage()">Gửi tin nhắn</button>
-    <p id="status"></p>
+  <h2>Nhập thông tin</h2>
+  <input type="text" id="chatId" placeholder="Nhập ID chat Telegram..."><br>
+  <textarea id="message" placeholder="Nhập nội dung..."></textarea><br>
+  <input type="text" id="replyLink" placeholder="Nhập link tin nhắn cần trả lời (có thể bỏ trống)"><br>
 
-    <script>
-        function sendMessage() {
-            let botToken = "7550142487:AAH_xOHuyHr0C2nXnQmkWx-b6-f1NSDXaHo";
-            let chatId = document.getElementById("chatId").value.trim();
-            let message = document.getElementById("message").value.trim();
-            let replyLink = document.getElementById("replyLink").value.trim();
-            let photoFile = document.getElementById("photoInput").files[0];
-            let mediaUrl = document.getElementById("mediaUrl").value.trim();
-            let statusElement = document.getElementById("status");
+  <input type="file" id="photoInput" accept="image/*" multiple><br>
 
-            if ((chatId === "" && replyLink === "") || (message === "" && !photoFile && mediaUrl === "")) {
-                statusElement.style.color = "red";
-                statusElement.innerText = "❌ Vui lòng nhập ID chat hoặc Link trả lời và nội dung hoặc ảnh/link!";
-                return;
-            }
+  <div id="dropZone">Kéo và thả ảnh vào đây (nhiều ảnh được hỗ trợ)</div>
 
-            let replyToMessageId = null;
-            if (replyLink !== "") {
-                try {
-                    let parts = replyLink.split('/');
-                    let usernameOrId = parts[3];
-                    let messageId = parts[4];
-                    if (!usernameOrId || !messageId) throw "Link không hợp lệ!";
-                    chatId = '@' + usernameOrId;
-                    replyToMessageId = messageId;
-                } catch (e) {
-                    statusElement.style.color = "red";
-                    statusElement.innerText = "❌ Link trả lời không hợp lệ!";
-                    return;
-                }
-            }
+  <input type="text" id="mediaUrl" placeholder="Nhập link ảnh hoặc video (tùy chọn)"><br>
+  <button onclick="sendMessage()">Gửi tin nhắn</button>
+  <p id="status"></p>
 
-            // Ưu tiên gửi file ảnh từ máy
-            if (photoFile) {
-                let url = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendPhoto`;
-                let formData = new FormData();
-                formData.append("chat_id", chatId);
-                formData.append("photo", photoFile);
-                if (message) formData.append("caption", message);
-                if (replyToMessageId) formData.append("reply_to_message_id", replyToMessageId);
+  <script>
+    let droppedFiles = [];
 
-                fetch(url, {
-                    method: "POST",
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.ok) {
-                        statusElement.style.color = "green";
-                        statusElement.innerText = "✅ Ảnh đã được gửi!";
-                        document.getElementById("message").value = "";
-                        document.getElementById("replyLink").value = "";
-                        document.getElementById("photoInput").value = "";
-                        document.getElementById("mediaUrl").value = "";
-                    } else {
-                        statusElement.style.color = "red";
-                        statusElement.innerText = "❌ Lỗi khi gửi ảnh!";
-                    }
-                })
-                .catch(error => {
-                    statusElement.style.color = "red";
-                    statusElement.innerText = "❌ Lỗi kết nối!";
-                });
-            } else if (mediaUrl !== "") {
-                // Gửi ảnh hoặc video từ URL
-                let isImage = mediaUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i);
-                let isVideo = mediaUrl.match(/\.(mp4|mov|mkv|avi|webm)$/i);
+    // Xử lý kéo thả ảnh
+    const dropZone = document.getElementById("dropZone");
+    dropZone.addEventListener("dragover", e => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      droppedFiles = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith("image/"));
+      document.getElementById("photoInput").files = createFileList(droppedFiles);
+    });
 
-                let url = "";
-                let payload = {
-                    chat_id: chatId,
-                    caption: message || undefined,
-                    reply_to_message_id: replyToMessageId || undefined
-                };
+    // Tạo FileList từ mảng File
+    function createFileList(files) {
+      const dataTransfer = new DataTransfer();
+      files.forEach(file => dataTransfer.items.add(file));
+      return dataTransfer.files;
+    }
 
-                if (isImage) {
-                    url = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendPhoto`;
-                    payload.photo = mediaUrl;
-                } else if (isVideo) {
-                    url = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendVideo`;
-                    payload.video = mediaUrl;
-                } else {
-                    statusElement.style.color = "red";
-                    statusElement.innerText = "❌ Link media không hợp lệ (không phải ảnh/video)!";
-                    return;
-                }
+    function sendMessage() {
+      const botToken = "7550142487:AAH_xOHuyHr0C2nXnQmkWx-b6-f1NSDXaHo";
+      let chatId = document.getElementById("chatId").value.trim();
+      const message = document.getElementById("message").value.trim();
+      const replyLink = document.getElementById("replyLink").value.trim();
+      const photoFiles = document.getElementById("photoInput").files;
+      const mediaUrl = document.getElementById("mediaUrl").value.trim();
+      const statusElement = document.getElementById("status");
 
-                fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.ok) {
-                        statusElement.style.color = "green";
-                        statusElement.innerText = "✅ Media đã được gửi từ link!";
-                        document.getElementById("message").value = "";
-                        document.getElementById("replyLink").value = "";
-                        document.getElementById("mediaUrl").value = "";
-                    } else {
-                        statusElement.style.color = "red";
-                        statusElement.innerText = "❌ Lỗi khi gửi media từ link!";
-                    }
-                })
-                .catch(error => {
-                    statusElement.style.color = "red";
-                    statusElement.innerText = "❌ Lỗi kết nối!";
-                });
+      if ((chatId === "" && replyLink === "") || (message === "" && photoFiles.length === 0 && mediaUrl === "")) {
+        statusElement.style.color = "red";
+        statusElement.innerText = "❌ Vui lòng nhập ID chat hoặc Link trả lời và nội dung hoặc ảnh/link!";
+        return;
+      }
 
-            } else {
-                // Gửi tin nhắn văn bản
-                let url = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendMessage`;
-                let data = {
-                    chat_id: chatId,
-                    text: message
-                };
-                if (replyToMessageId) {
-                    data.reply_to_message_id = replyToMessageId;
-                }
-
-                fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.ok) {
-                        statusElement.style.color = "green";
-                        statusElement.innerText = "✅ Tin nhắn đã được gửi!";
-                        document.getElementById("message").value = "";
-                        document.getElementById("replyLink").value = "";
-                        document.getElementById("mediaUrl").value = "";
-                    } else {
-                        statusElement.style.color = "red";
-                        statusElement.innerText = "❌ Lỗi khi gửi tin nhắn!";
-                    }
-                })
-                .catch(error => {
-                    statusElement.style.color = "red";
-                    statusElement.innerText = "❌ Lỗi kết nối!";
-                });
-            }
+      let replyToMessageId = null;
+      if (replyLink !== "") {
+        try {
+          const parts = replyLink.split('/');
+          const usernameOrId = parts[3];
+          const messageId = parts[4];
+          if (!usernameOrId || !messageId) throw "Link không hợp lệ!";
+          chatId = '@' + usernameOrId;
+          replyToMessageId = messageId;
+        } catch (e) {
+          statusElement.style.color = "red";
+          statusElement.innerText = "❌ Link trả lời không hợp lệ!";
+          return;
         }
-    </script>
+      }
 
+      // Ưu tiên gửi nhiều ảnh từ file
+      if (photoFiles.length > 0) {
+        const url = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendMediaGroup`;
+        const formData = new FormData();
+        formData.append("chat_id", chatId);
+        if (replyToMessageId) formData.append("reply_to_message_id", replyToMessageId);
+
+        const media = [];
+        for (let i = 0; i < photoFiles.length; i++) {
+          const file = photoFiles[i];
+          const attachName = `photo${i}`;
+          formData.append(attachName, file);
+          media.push({
+            type: "photo",
+            media: `attach://${attachName}`,
+            caption: i === 0 ? message : undefined  // chỉ caption cho ảnh đầu
+          });
+        }
+        formData.append("media", JSON.stringify(media));
+
+        fetch(url, {
+          method: "POST",
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.ok) {
+            statusElement.style.color = "green";
+            statusElement.innerText = "✅ Đã gửi nhiều ảnh!";
+            document.getElementById("message").value = "";
+            document.getElementById("replyLink").value = "";
+            document.getElementById("photoInput").value = "";
+            document.getElementById("mediaUrl").value = "";
+          } else {
+            statusElement.style.color = "red";
+            statusElement.innerText = "❌ Lỗi khi gửi nhiều ảnh!";
+          }
+        })
+        .catch(() => {
+          statusElement.style.color = "red";
+          statusElement.innerText = "❌ Lỗi kết nối!";
+        });
+
+        return;
+      }
+
+      // Gửi từ link media (ảnh/video)
+      if (mediaUrl !== "") {
+        const isImage = mediaUrl.match(/\.(jpeg|jpg|png|gif|webp)$/i);
+        const isVideo = mediaUrl.match(/\.(mp4|mov|mkv|avi|webm)$/i);
+
+        let url = "";
+        const payload = {
+          chat_id: chatId,
+          caption: message || undefined,
+          reply_to_message_id: replyToMessageId || undefined
+        };
+
+        if (isImage) {
+          url = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendPhoto`;
+          payload.photo = mediaUrl;
+        } else if (isVideo) {
+          url = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendVideo`;
+          payload.video = mediaUrl;
+        } else {
+          statusElement.style.color = "red";
+          statusElement.innerText = "❌ Link media không hợp lệ (không phải ảnh/video)!";
+          return;
+        }
+
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.ok) {
+            statusElement.style.color = "green";
+            statusElement.innerText = "✅ Media đã được gửi từ link!";
+            document.getElementById("message").value = "";
+            document.getElementById("replyLink").value = "";
+            document.getElementById("mediaUrl").value = "";
+          } else {
+            statusElement.style.color = "red";
+            statusElement.innerText = "❌ Lỗi khi gửi media từ link!";
+          }
+        })
+        .catch(error => {
+          statusElement.style.color = "red";
+          statusElement.innerText = "❌ Lỗi kết nối!";
+        });
+
+        return;
+      }
+
+      // Gửi tin nhắn văn bản
+      const textUrl = `https://winter-hall-f9b4.jayky2k9.workers.dev/bot${botToken}/sendMessage`;
+      const data = {
+        chat_id: chatId,
+        text: message,
+        reply_to_message_id: replyToMessageId || undefined
+      };
+
+      fetch(textUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok) {
+          statusElement.style.color = "green";
+          statusElement.innerText = "✅ Tin nhắn đã được gửi!";
+          document.getElementById("message").value = "";
+          document.getElementById("replyLink").value = "";
+          document.getElementById("mediaUrl").value = "";
+        } else {
+          statusElement.style.color = "red";
+          statusElement.innerText = "❌ Lỗi khi gửi tin nhắn!";
+        }
+      })
+      .catch(() => {
+        statusElement.style.color = "red";
+        statusElement.innerText = "❌ Lỗi kết nối!";
+      });
+    }
+  </script>
 </body>
 </html>
